@@ -12,7 +12,7 @@ def fetch_poster(movie_id):
     api_key = "YOUR_TMDB_API_KEY"  # Replace with your actual TMDB API key
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=en-US"
     response = requests.get(url)
-    
+
     if response.status_code == 200:
         data = response.json()
         poster_path = data.get('poster_path')
@@ -25,10 +25,14 @@ def fetch_poster(movie_id):
 
 # Recommend movies
 def recommend(movie):
-    index = movies[movies['title'] == movie].index[0]
+    try:
+        index = movies[movies['title'] == movie].index[0]
+    except IndexError:
+        return [], []
+
     distances = similarity[index]
     movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
-    
+
     recommended_titles = []
     recommended_posters = []
     for i in movie_list:
@@ -44,8 +48,13 @@ selected_movie = st.selectbox("Type or select a movie", movies['title'].values)
 
 if st.button('Show Recommendation'):
     names, posters = recommend(selected_movie)
-    cols = st.columns(5)
-    for i in range(5):
-        with cols[i]:
-            st.text(names[i])
-            st.image(posters[i])
+
+    if not names:
+        st.error("No recommendations found. Please check the movie name or dataset.")
+    else:
+        cols = st.columns(len(names))
+        for i in range(len(names)):
+            with cols[i]:
+                st.text(names[i])
+                st.image(posters[i])
+                
