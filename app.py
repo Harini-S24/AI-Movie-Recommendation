@@ -7,11 +7,21 @@ import requests
 movies = pickle.load(open('movies.pkl', 'rb'))
 similarity = pickle.load(open('similarity.pkl', 'rb'))
 
-# TMDB API to fetch posters
+# TMDB API to fetch posters safely
 def fetch_poster(movie_id):
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key=YOUR_TMDB_API_KEY&language=en-US"
-    data = requests.get(url).json()
-    return "https://image.tmdb.org/t/p/w500/" + data['poster_path']
+    api_key = "YOUR_TMDB_API_KEY"  # Replace with your actual TMDB API key
+    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=en-US"
+    response = requests.get(url)
+    
+    if response.status_code == 200:
+        data = response.json()
+        poster_path = data.get('poster_path')
+        if poster_path:
+            return "https://image.tmdb.org/t/p/w500/" + poster_path
+        else:
+            return "https://via.placeholder.com/500x750?text=No+Image"
+    else:
+        return "https://via.placeholder.com/500x750?text=Error"
 
 # Recommend movies
 def recommend(movie):
@@ -34,8 +44,8 @@ selected_movie = st.selectbox("Type or select a movie", movies['title'].values)
 
 if st.button('Show Recommendation'):
     names, posters = recommend(selected_movie)
-    col1, col2, col3, col4, col5 = st.columns(5)
-    for i, col in enumerate([col1, col2, col3, col4, col5]):
-        with col:
+    cols = st.columns(5)
+    for i in range(5):
+        with cols[i]:
             st.text(names[i])
             st.image(posters[i])
