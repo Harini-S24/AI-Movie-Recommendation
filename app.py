@@ -11,25 +11,23 @@ similarity = pickle.load(open('similarity.pkl', 'rb'))
 def fetch_poster(movie_id):
     api_key = "YOUR_TMDB_API_KEY"  # Replace with your actual TMDB API key
     url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=en-US"
-    response = requests.get(url)
-
-    if response.status_code == 200:
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
         data = response.json()
         poster_path = data.get('poster_path')
         if poster_path:
             return "https://image.tmdb.org/t/p/w500/" + poster_path
-        else:
-            return "https://via.placeholder.com/500x750?text=No+Image"
-    else:
-        return "https://via.placeholder.com/500x750?text=Error"
+    except:
+        pass
+    return "https://via.placeholder.com/500x750?text=No+Image"
 
 # Recommend movies
 def recommend(movie):
-    try:
-        index = movies[movies['title'] == movie].index[0]
-    except IndexError:
+    if movie not in movies['title'].values:
         return [], []
-
+    
+    index = movies[movies['title'] == movie].index[0]
     distances = similarity[index]
     movie_list = sorted(list(enumerate(distances)), reverse=True, key=lambda x: x[1])[1:6]
 
@@ -48,13 +46,12 @@ selected_movie = st.selectbox("Type or select a movie", movies['title'].values)
 
 if st.button('Show Recommendation'):
     names, posters = recommend(selected_movie)
-
+    
     if not names:
-        st.error("No recommendations found. Please check the movie name or dataset.")
+        st.error("No recommendations found for the selected movie.")
     else:
         cols = st.columns(len(names))
         for i in range(len(names)):
             with cols[i]:
                 st.text(names[i])
                 st.image(posters[i])
-                
